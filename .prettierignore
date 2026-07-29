@@ -4,3 +4,7 @@ build
 .next
 coverage
 package-lock.json
+
+# Gerado automaticamente pelo Next.js a cada build/dev, com o estilo de aspas
+# proprio dele (nao o nosso). Formatar isso so recria o mesmo diff a cada build.
+apps/web/next-env.d.ts
