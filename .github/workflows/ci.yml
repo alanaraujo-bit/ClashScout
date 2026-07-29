@@ -25,9 +25,11 @@ jobs:
 
       - run: npm ci
 
-      # O pacote compartilhado precisa existir em dist/ antes de tipar os apps.
-      - name: Build do pacote compartilhado
-        run: npm run build --workspace @clashscout/shared
+      # Os pacotes compartilhados precisam existir em dist/ antes de tipar,
+      # lintar ou testar os apps. `build:database` tambem roda `prisma generate`,
+      # sem o qual os tipos do client nao existem.
+      - name: Build dos pacotes compartilhados
+        run: npm run build:shared && npm run build:database
 
       - name: Formatação
         run: npm run format:check

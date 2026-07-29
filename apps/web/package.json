@@ -13,8 +13,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
+    "@clashscout/database": "^0.1.0",
     "@clashscout/shared": "^0.1.0",
     "next": "^16.2.12",
+    "next-auth": "^5.0.0-beta.32",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

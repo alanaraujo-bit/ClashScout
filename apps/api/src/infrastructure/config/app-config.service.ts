@@ -31,7 +31,28 @@ export class AppConfigService {
       .filter(Boolean);
   }
 
+  /** `undefined` quando o banco nao foi configurado - o DatabaseModule reclama. */
+  get databaseUrl(): string | undefined {
+    return this.config.get('DATABASE_URL', { infer: true });
+  }
+
   get supercellBaseUrl(): string {
     return this.config.get('SUPERCELL_API_BASE_URL', { infer: true });
+  }
+
+  get supercellToken(): string | undefined {
+    return this.config.get('SUPERCELL_API_TOKEN', { infer: true });
+  }
+
+  get supercellCacheTtlSeconds(): number {
+    return this.config.get('SUPERCELL_CACHE_TTL_SECONDS', { infer: true });
+  }
+
+  get supercellRateLimitPerSecond(): number {
+    return this.config.get('SUPERCELL_RATE_LIMIT_PER_SECOND', { infer: true });
+  }
+
+  get supercellTimeoutMs(): number {
+    return this.config.get('SUPERCELL_TIMEOUT_MS', { infer: true });
   }
 }

@@ -1,0 +1,277 @@
+// ---------------------------------------------------------------------------
+// ClashScout - modelo de dados
+//
+// Fonte unica de verdade do banco. Consumido por apps/api (repositorios) e por
+// apps/web (apenas o adapter do Auth.js).
+//
+// Convencoes:
+// - Tabelas do Auth.js seguem os nomes de campo que o adapter exige, mesmo
+//   quando fogem do nosso camelCase (`refresh_token`, `expires_at`...).
+// - Enums espelham `@clashscout/shared`. O teste `prisma-enums.spec.ts` na api
+//   falha se os dois sairem de sincronia.
+// - Niveis de heroi sao colunas explicitas, e nao JSON, porque os requisitos
+//   minimos das vagas filtram por eles e precisam de indice.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 nao aceita mais `url` aqui: a conexao usada pelo Migrate fica em
+// prisma.config.ts e a do runtime e injetada via driver adapter no PrismaClient.
+datasource db {
+  provider = "postgresql"
+}
+
+// ===========================================================================
+// Enums de dominio (espelham packages/shared/src/enums/clash.enums.ts)
+// ===========================================================================
+
+enum UserRole {
+  PLAYER
+  LEADER
+  ADMIN
+}
+
+enum PlayStyle {
+  WAR
+  FARMING
+  CWL
+  CLAN_GAMES
+  CASUAL
+}
+
+enum VacancyStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+// ===========================================================================
+// Autenticacao - tabelas exigidas pelo @auth/prisma-adapter (Auth.js v5)
+// ===========================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+
+  /// Foto vinda do provedor OAuth (ex.: Google). Somente leitura para nos.
+  image String?
+
+  /// Foto enviada pelo usuario, hospedada em bucket proprio (S3/R2).
+  /// Guardamos a URL publica; o upload entra na Fase 4.
+  avatarUrl String?
+
+  role UserRole @default(PLAYER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  playerProfile PlayerProfile?
+  vacancies     ClanVacancy[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ===========================================================================
+// Dominio - jogador
+// ===========================================================================
+
+/// Curriculo do jogador: identidade verificada na Supercell + ultimo snapshot
+/// conhecido das estatisticas. A evolucao historica vive em PlayerStatsHistory.
+model PlayerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// Tag normalizada, sempre com `#` e em maiusculas (ex.: `#2PP0JCCL`).
+  playerTag String @unique
+
+  /// Preenchido quando a posse da conta e comprovada pelo API Token do jogo.
+  /// Perfil sem verificacao nao pode se candidatar a vagas (regra da Fase 3).
+  verifiedAt DateTime?
+
+  // --- Dados oficiais vindos da Supercell ---
+  name                     String
+  townHallLevel            Int
+  townHallWeaponLevel      Int?
+  expLevel                 Int
+  trophies                 Int
+  bestTrophies             Int
+  warStars                 Int
+  attackWins               Int
+  defenseWins              Int
+  donations                Int
+  donationsReceived        Int
+  clanCapitalContributions Int    @default(0)
+
+  // --- Herois da vila principal (null = nao desbloqueado) ---
+  barbarianKingLevel Int?
+  archerQueenLevel   Int?
+  minionPrinceLevel  Int?
+  grandWardenLevel   Int?
+  royalChampionLevel Int?
+
+  // --- Base do construtor ---
+  builderHallLevel    Int?
+  builderBaseTrophies Int?
+  battleMachineLevel  Int?
+  battleCopterLevel   Int?
+
+  // --- Cla atual (desnormalizado: e so o estado no ultimo sync) ---
+  clanTag  String?
+  clanName String?
+  clanRole String?
+
+  /// Perfil de jogo declarado pelo jogador (nao vem da Supercell).
+  playStyles PlayStyle[]
+
+  /// Payload bruto do ultimo GET /players/{tag}. Guardado para nao perder
+  /// campos que a Supercell adicione antes de virarem coluna.
+  rawData Json?
+
+  /// Ultima vez que sincronizamos com a Supercell. Base para decidir se o
+  /// cache expirou e um novo fetch e necessario.
+  lastSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history PlayerStatsHistory[]
+
+  // Indices que servem a busca de candidatos por requisito de vaga.
+  @@index([townHallLevel, trophies])
+  @@index([clanTag])
+  @@index([verifiedAt])
+}
+
+/// Serie temporal: um snapshot por sincronizacao, para desenhar a evolucao do
+/// jogador. Nunca sofre update - so insercao.
+model PlayerStatsHistory {
+  id              String @id @default(cuid())
+  playerProfileId String
+
+  /// Momento do snapshot. Junto com o perfil forma a chave natural.
+  capturedAt DateTime @default(now())
+
+  townHallLevel            Int
+  expLevel                 Int
+  trophies                 Int
+  bestTrophies             Int
+  warStars                 Int
+  attackWins               Int
+  defenseWins              Int
+  donations                Int
+  donationsReceived        Int
+  clanCapitalContributions Int  @default(0)
+
+  barbarianKingLevel Int?
+  archerQueenLevel   Int?
+  minionPrinceLevel  Int?
+  grandWardenLevel   Int?
+  royalChampionLevel Int?
+
+  builderHallLevel    Int?
+  builderBaseTrophies Int?
+
+  clanTag String?
+
+  profile PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([playerProfileId, capturedAt])
+  @@index([playerProfileId, capturedAt(sort: Desc)])
+}
+
+// ===========================================================================
+// Dominio - recrutamento
+// ===========================================================================
+
+/// Vaga publicada por um lider de cla. Os campos `min*` sao os requisitos
+/// comparados contra PlayerProfile no matching (Fase 3).
+model ClanVacancy {
+  id      String @id @default(cuid())
+  ownerId String
+
+  clanTag  String
+  clanName String
+
+  title       String
+  description String @db.Text
+
+  status VacancyStatus @default(DRAFT)
+
+  // --- Requisitos minimos (null = nao exigido) ---
+  minTownHallLevel      Int?
+  minTrophies           Int?
+  minWarStars           Int?
+  minBarbarianKingLevel Int?
+  minArcherQueenLevel   Int?
+  minMinionPrinceLevel  Int?
+  minGrandWardenLevel   Int?
+  minRoyalChampionLevel Int?
+
+  /// Estilos de jogo esperados do candidato.
+  playStyles PlayStyle[]
+
+  /// Idioma principal do cla, em BCP 47 (ex.: `pt-BR`).
+  language String?
+
+  /// Banner da vaga hospedado em bucket proprio (S3/R2). Upload na Fase 4.
+  bannerUrl String?
+
+  /// Vagas expiram para o classificado nao ficar cheio de anuncio morto.
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([status, minTownHallLevel])
+  @@index([clanTag])
+  @@index([ownerId])
+}

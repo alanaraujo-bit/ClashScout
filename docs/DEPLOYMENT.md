@@ -31,12 +31,30 @@ git push -u origin main
 
 3. **Environment Variables:**
 
-   | Nome                           | Valor                                        |
-   | ------------------------------ | -------------------------------------------- |
-   | `NEXT_PUBLIC_API_URL`          | URL pública da API no Railway, sem `/` final |
-   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Fase 4                                       |
+   | Nome                           | Valor                                                   |
+   | ------------------------------ | ------------------------------------------------------- |
+   | `NEXT_PUBLIC_API_URL`          | URL pública da API no Railway, **sem** `/` final        |
+   | `AUTH_SECRET`                  | Gere com `npx auth secret`                              |
+   | `AUTH_GOOGLE_ID`               | Client ID do Google Cloud Console                       |
+   | `AUTH_GOOGLE_SECRET`           | Client secret do Google                                 |
+   | `DATABASE_URL`                 | `DATABASE_PUBLIC_URL` do Postgres do Railway (ver nota) |
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Fase 4                                                  |
 
-4. Deploy. Cada push na `main` publica produção; branches viram preview.
+   > **`DATABASE_URL` na Vercel usa a URL pública, não a interna.** A Vercel está
+   > fora da rede privada do Railway e não resolve `*.railway.internal`. O app web
+   > só toca o banco para as tabelas do Auth.js, num volume baixo (login), então a
+   > ida pelo proxy público é aceitável.
+
+   > **Cuidado ao gravar variáveis pelo CLI no Windows PowerShell:** o stdin é
+   > codificado com BOM, e o BOM entra no valor. Numa URL isso a torna relativa e
+   > quebra as chamadas em silêncio. Use `printf '%s' 'valor' | vercel env add ...`
+   > pelo bash, ou o painel.
+
+4. **Google Cloud Console** → OAuth 2.0 Client ID, com a redirect URI
+   `https://<seu-dominio>/api/auth/callback/google` autorizada. Sem isso o login
+   falha com `redirect_uri_mismatch`.
+
+5. Deploy. Cada push na `main` publica produção; branches viram preview.
 
 > O `prebuild` de `apps/web` compila `packages/shared` antes do `next build`.
 > Se aparecer "Cannot find module '@clashscout/shared'", verifique se o install
@@ -53,17 +71,22 @@ git push -u origin main
      `node_modules/.cache`)
    - start: `npm run start:api`
    - healthcheck: `/api/v1/health`
-3. **Add → Database → PostgreSQL** (usado a partir da Fase 2).
+3. **Add → Database → PostgreSQL**. As migrations rodam sozinhas: o
+   `preDeployCommand` do `railway.json` executa `prisma migrate deploy` antes de
+   a nova versão subir, e uma migration que falha aborta o deploy em vez de
+   deixar a aplicação de pé contra um schema errado.
 4. **Variables:**
 
-   | Nome                    | Valor                                                  |
-   | ----------------------- | ------------------------------------------------------ |
-   | `NODE_ENV`              | `production`                                           |
-   | `NPM_CONFIG_PRODUCTION` | `false` — **obrigatória**                              |
-   | `CORS_ORIGINS`          | domínio da Vercel, ex. `https://clashscout.vercel.app` |
-   | `DATABASE_URL`          | `${{Postgres.DATABASE_URL}}` (referência)              |
-   | `SUPERCELL_API_TOKEN`   | Fase 2                                                 |
-   | `JWT_SECRET`            | Fase 3 — segredo longo e aleatório                     |
+   | Nome                              | Valor                                                        |
+   | --------------------------------- | ------------------------------------------------------------ |
+   | `NODE_ENV`                        | `production`                                                 |
+   | `NPM_CONFIG_PRODUCTION`           | `false` — **obrigatória**                                    |
+   | `CORS_ORIGINS`                    | domínio da Vercel, ex. `https://clashscout.vercel.app`       |
+   | `DATABASE_URL`                    | `${{Postgres.DATABASE_URL}}` (referência interna)            |
+   | `SUPERCELL_API_TOKEN`             | Token do developer portal — ver [SUPERCELL.md](SUPERCELL.md) |
+   | `SUPERCELL_CACHE_TTL_SECONDS`     | opcional, padrão `600`                                       |
+   | `SUPERCELL_RATE_LIMIT_PER_SECOND` | opcional, padrão `10`                                        |
+   | `SUPERCELL_TIMEOUT_MS`            | opcional, padrão `8000`                                      |
 
    **Não** defina `PORT`: o Railway injeta a porta e a aplicação já escuta em
    `0.0.0.0` na porta recebida.

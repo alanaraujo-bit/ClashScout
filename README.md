@@ -5,20 +5,22 @@ Jogadores publicam seu currículo (perfil, estilo de jogo, histórico); líderes
 publicam vagas; a plataforma conecta os dois lados com verificação de identidade
 via API oficial da Supercell.
 
-> **Status:** Fase 1 concluída — infraestrutura, estrutura modular e pipeline de
-> build funcionando ponta a ponta. Sem banco de dados e sem autenticação ainda.
+> **Status:** Fase 2 concluída — banco modelado e migrado, login com Google,
+> integração com a API da Supercell com cache e rate limit. Sem interface visual
+> ainda (Fase 4).
 
 ---
 
 ## Stack
 
-| Camada        | Tecnologia                             | Hospedagem |
-| ------------- | -------------------------------------- | ---------- |
-| Frontend      | Next.js 16 (App Router) + Tailwind 4   | Vercel     |
-| Backend       | NestJS 11 (Clean Architecture)         | Railway    |
-| Banco         | PostgreSQL + Prisma _(Fase 2)_         | Railway    |
-| Compartilhado | TypeScript puro (`@clashscout/shared`) | —          |
-| Integração    | API oficial da Supercell _(Fase 2)_    | —          |
+| Camada        | Tecnologia                                   | Hospedagem |
+| ------------- | -------------------------------------------- | ---------- |
+| Frontend      | Next.js 16 (App Router) + Tailwind 4         | Vercel     |
+| Backend       | NestJS 11 (Clean Architecture)               | Railway    |
+| Banco         | PostgreSQL + Prisma 7                        | Railway    |
+| Autenticação  | Auth.js v5 (Google OAuth)                    | Vercel     |
+| Compartilhado | `@clashscout/shared`, `@clashscout/database` | —          |
+| Integração    | API oficial da Supercell                     | —          |
 
 Monorepo com **npm workspaces**: um único `npm install` na raiz, dois deploys
 independentes.
@@ -61,9 +63,11 @@ ClashScout/
 │           └── lib/                # cliente HTTP, env
 │
 ├── packages/
-│   └── shared/                     # contratos, enums e utils usados pelos dois lados
+│   ├── shared/                     # contratos, enums e utils (tipos puros)
+│   └── database/                   # schema Prisma, migrations e client
+│       └── prisma/schema.prisma    # FONTE ÚNICA do modelo de dados
 │
-├── docs/                           # arquitetura, deploy e roadmap
+├── docs/                           # arquitetura, API, deploy, Supercell, roadmap
 ├── railway.json                    # configuração de deploy do backend
 └── package.json                    # workspaces + scripts orquestradores
 ```
@@ -82,6 +86,9 @@ npm install                # instala todos os workspaces
 
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+
+# aplica as migrations no banco (usa a DATABASE_PUBLIC_URL do Railway)
+npm run migrate:deploy
 
 npm run dev:api            # http://localhost:3333/api/v1/health
 npm run dev:web            # http://localhost:3000
@@ -102,6 +109,14 @@ verde, a cadeia web → api → contrato compartilhado está correta.
 | `npm run lint`      | ESLint                                      |
 | `npm run format`    | Prettier em todo o repositório              |
 
+Banco de dados:
+
+| Script                   | O que faz                                     |
+| ------------------------ | --------------------------------------------- |
+| `npm run migrate:dev`    | Cria e aplica migration em desenvolvimento    |
+| `npm run migrate:deploy` | Aplica migrations pendentes (usado no deploy) |
+| `npm run migrate:status` | Mostra o estado das migrations                |
+
 ---
 
 ## Variáveis de ambiente
@@ -109,9 +124,12 @@ verde, a cadeia web → api → contrato compartilhado está correta.
 Nenhum `.env` real é versionado. Os arquivos `.env.example` são a referência.
 
 **API** (`apps/api/.env`) — `NODE_ENV`, `PORT`, `CORS_ORIGINS`, `DATABASE_URL`,
-`SUPERCELL_API_BASE_URL`, `SUPERCELL_API_TOKEN`, `JWT_SECRET`.
+`SUPERCELL_API_BASE_URL`, `SUPERCELL_API_TOKEN`,
+`SUPERCELL_CACHE_TTL_SECONDS`, `SUPERCELL_RATE_LIMIT_PER_SECOND`,
+`SUPERCELL_TIMEOUT_MS`.
 
-**Web** (`apps/web/.env.local`) — `NEXT_PUBLIC_API_URL`,
+**Web** (`apps/web/.env.local`) — `NEXT_PUBLIC_API_URL`, `AUTH_SECRET`,
+`AUTH_URL`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `DATABASE_URL`,
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 
 A API valida o ambiente no boot com Zod e **falha imediatamente** se algo
@@ -133,14 +151,26 @@ Resumo — passo a passo em [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Roadmap
 
-| Fase | Escopo                                                          | Status        |
-| ---- | --------------------------------------------------------------- | ------------- |
-| 1    | Infraestrutura, repositório, estrutura modular, deploy configs  | ✅ Concluída  |
-| 2    | Modelagem PostgreSQL/Prisma + integração com a API da Supercell | ⏳ Aguardando |
-| 3    | Autenticação, perfis de jogador e criação de vagas              | ⏳ Aguardando |
-| 4    | UI/UX Apple-like, Service Workers e Push Notifications          | ⏳ Aguardando |
+| Fase | Escopo                                                         | Status        |
+| ---- | -------------------------------------------------------------- | ------------- |
+| 1    | Infraestrutura, repositório, estrutura modular, deploy configs | ✅ Concluída  |
+| 2    | Banco, autenticação (Google) e integração com a Supercell      | ✅ Concluída  |
+| 3    | Vagas, candidaturas e matching                                 | ⏳ Aguardando |
+| 4    | UI/UX Apple-like, Service Workers e Push Notifications         | ⏳ Aguardando |
 
 Detalhamento em [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
+## Documentação
+
+| Documento                                    | Conteúdo                                              |
+| -------------------------------------------- | ----------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Camadas, regras não negociáveis, decisões             |
+| [docs/API.md](docs/API.md)                   | Endpoints, autenticação e códigos de erro             |
+| [docs/SUPERCELL.md](docs/SUPERCELL.md)       | Integração, cache, rate limit e o problema do IP fixo |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)     | Passo a passo de Vercel e Railway                     |
+| [docs/ROADMAP.md](docs/ROADMAP.md)           | Escopo por fase                                       |
 
 ---
 

@@ -31,6 +31,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
+    "@clashscout/database": "^0.1.0",
     "@clashscout/shared": "^0.1.0",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",

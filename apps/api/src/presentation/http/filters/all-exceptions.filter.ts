@@ -14,6 +14,13 @@ import {
   DomainError,
   NotFoundError,
 } from '../../../core/domain/errors/domain.error';
+import {
+  PlayerNotFoundInSupercellError,
+  SupercellAuthError,
+  SupercellNotConfiguredError,
+  SupercellRateLimitedError,
+  SupercellUnavailableError,
+} from '../../../core/domain/errors/integration.errors';
 
 /**
  * Fronteira unica de erro: traduz erros de dominio e excecoes do Nest para o
@@ -54,6 +61,45 @@ export class AllExceptionsFilter implements ExceptionFilter {
   } {
     if (exception instanceof NotFoundError) {
       return { statusCode: HttpStatus.NOT_FOUND, code: exception.code, message: exception.message };
+    }
+
+    // Tag valida em formato, mas inexistente no jogo.
+    if (exception instanceof PlayerNotFoundInSupercellError) {
+      return { statusCode: HttpStatus.NOT_FOUND, code: exception.code, message: exception.message };
+    }
+
+    // Falhas de integracao antes do DomainError generico: sao DomainError
+    // tambem, mas nenhuma delas e culpa da entrada do usuario, logo nao viram 400.
+    if (exception instanceof SupercellRateLimitedError) {
+      return {
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        code: exception.code,
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof SupercellAuthError) {
+      return {
+        statusCode: HttpStatus.BAD_GATEWAY,
+        code: exception.code,
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof SupercellUnavailableError) {
+      return {
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        code: exception.code,
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof SupercellNotConfiguredError) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: exception.code,
+        message: exception.message,
+      };
     }
 
     if (exception instanceof BusinessRuleError) {

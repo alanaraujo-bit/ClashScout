@@ -15,14 +15,27 @@ fases avançam.
 │   Vercel     │                          │   Railway    │
 └──────┬───────┘                          └──────┬───────┘
        │                                         │
-       │        @clashscout/shared               ├──► PostgreSQL (Railway)
-       └──────── contratos e enums ──────────────┤
-                                                 └──► API Supercell (Fase 2)
+       │  @clashscout/shared (contratos)         ├──► API Supercell
+       ├─────────────────────────────────────────┤
+       │  @clashscout/database (Prisma)          │
+       └──────────────┬──────────────────────────┘
+                      ▼
+              PostgreSQL (Railway)
 ```
 
-O pacote `@clashscout/shared` é a **única** dependência comum. Ele contém apenas
-tipos, enums e funções puras — nunca lógica de servidor nem código de UI. Assim o
-frontend e o backend evoluem juntos sem se acoplarem.
+Dois pacotes compartilhados, com fronteiras diferentes:
+
+- **`@clashscout/shared`** — tipos, enums e funções puras. Sem lógica de servidor,
+  sem UI. Consumido integralmente pelos dois apps.
+- **`@clashscout/database`** — schema Prisma, migrations e client. É a **fonte
+  única de verdade do modelo de dados**.
+
+O app web acessa o banco **apenas** pelas tabelas do Auth.js
+(`User`/`Account`/`Session`), porque o adapter do Auth.js exige acesso direto.
+Todo o resto do domínio passa pela API. Essa é a fronteira que impede regra de
+negócio de vazar para o frontend — e ela é uma decisão consciente, não um acaso:
+a alternativa (a API dona de 100% do banco) exigiria reimplementar o
+account-linking do Auth.js à mão.
 
 ---
 
@@ -103,8 +116,10 @@ Regras:
    código sobe para `components/` ou `lib/`.
 2. Componentes em `components/ui/` não conhecem regra de negócio.
 3. Toda chamada de rede passa por `lib/api-client.ts`. Nenhum `fetch` solto —
-   é ali que autenticação (Fase 3) e retry entram, em um lugar só.
-4. Server Components por padrão; `'use client'` só onde houver estado ou efeito.
+   é ali que o envio da sessão e o retry entram, em um lugar só.
+4. O único ponto do web que fala com o banco é `lib/prisma.ts`, e só para o
+   Auth.js. Qualquer outra query no frontend é erro de arquitetura.
+5. Server Components por padrão; `'use client'` só onde houver estado ou efeito.
 
 ---
 
@@ -119,28 +134,75 @@ Regras:
 
 Mapeamento de erros de domínio → HTTP:
 
-| Erro de domínio      | HTTP |
-| -------------------- | ---- |
-| `NotFoundError`      | 404  |
-| `BusinessRuleError`  | 422  |
-| `DomainError` (base) | 400  |
-| Qualquer outro       | 500  |
+| Erro de domínio                  | HTTP |
+| -------------------------------- | ---- |
+| `NotFoundError`                  | 404  |
+| `PlayerNotFoundInSupercellError` | 404  |
+| `BusinessRuleError`              | 422  |
+| `SupercellRateLimitedError`      | 429  |
+| `SupercellAuthError`             | 502  |
+| `SupercellUnavailableError`      | 503  |
+| `SupercellNotConfiguredError`    | 500  |
+| `DomainError` (base)             | 400  |
+| Qualquer outro                   | 500  |
+
+As falhas de integração são checadas **antes** do `DomainError` genérico: são
+`DomainError` também, mas nenhuma é culpa da entrada do usuário, logo não podem
+virar 400. Detalhes em [SUPERCELL.md](SUPERCELL.md#4-tradução-de-erros).
 
 ---
 
-## 5. Segurança (baseline da Fase 1)
+## 5. Autenticação
+
+Login social via **Google** com **Auth.js (NextAuth v5)** no app web.
+
+**Sessão em banco, não em JWT.** O motivo é concreto: a API NestJS precisa
+validar a mesma sessão que o Next.js emitiu. Com JWT, os dois runtimes teriam
+que compartilhar e reimplementar a mesma derivação de chave e criptografia (o
+Auth.js v5 usa JWE, não um JWT assinado simples). Com sessão em banco, a API
+faz um lookup na tabela `Session` — mais simples, e a revogação passa a ser
+imediata: apagar a linha encerra o acesso.
+
+Custo aceito: um SELECT por requisição autenticada. Indexado por
+`sessionToken` (único) e cacheável se virar gargalo.
+
+```
+Browser ──login Google──► Auth.js (web) ──grava──► tabela Session
+   │                                                    ▲
+   └──cookie de sessão──► API NestJS ──SessionGuard─────┘
+```
+
+### Vínculo de identidade do jogo ≠ login
+
+São dois passos deliberadamente separados:
+
+1. **Quem é a pessoa** — OAuth do Google.
+2. **Qual conta do jogo é dela** — `POST /api/v1/players/link`, comprovando posse
+   pelo API Token gerado dentro do Clash of Clans.
+
+O API Token do jogo prova posse de uma conta do jogo; não é identidade de
+pessoa. Tratá-lo como login permitiria que qualquer um com um token válido
+assumisse o perfil.
+
+---
+
+## 6. Segurança
 
 - `helmet` ativo em todas as respostas da API.
 - CORS restrito por allowlist explícita (`CORS_ORIGINS`), não `*`.
 - Headers de segurança no frontend via `vercel.json`.
 - Segredos apenas em variáveis de ambiente; `.env` fora do Git.
 - Erros 500 nunca expõem stack trace no corpo da resposta.
+- Sessão validada contra o banco a cada requisição; sessão expirada é 401.
+- Rate limiting de saída para a Supercell (ver [SUPERCELL.md](SUPERCELL.md)).
+- `rawData` do jogador nunca sai na resposta — o presenter decide o que é público.
 
-Autenticação, autorização por papel e rate limiting entram nas Fases 2 e 3.
+Autorização por papel (`LEADER` só mexe nas vagas do próprio clã) e rate
+limiting de entrada entram na Fase 3.
 
 ---
 
-## 6. Decisões e justificativas
+## 7. Decisões e justificativas
 
 | Decisão                        | Por quê                                                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |

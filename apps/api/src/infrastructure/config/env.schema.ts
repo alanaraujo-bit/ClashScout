@@ -13,14 +13,22 @@ export const envSchema = z.object({
 
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
 
-  // Fase 2: obrigatorias quando o Prisma e a integracao entrarem.
+  // Banco de dados. Sem ela a API sobe, mas qualquer rota que toque o banco
+  // falha - por isso o DatabaseModule valida a presenca no boot.
   DATABASE_URL: z.string().min(1).optional(),
+
+  // --- Integracao com a API oficial da Supercell ---
   SUPERCELL_API_BASE_URL: z.url().default('https://api.clashofclans.com/v1'),
   SUPERCELL_API_TOKEN: z.string().optional(),
 
-  // Fase 3: autenticacao.
-  JWT_SECRET: z.string().min(16).optional(),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  /** TTL do cache de perfil de jogador. Protege o rate limit da Supercell. */
+  SUPERCELL_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+
+  /** Teto de requisicoes por segundo enviadas a Supercell. */
+  SUPERCELL_RATE_LIMIT_PER_SECOND: z.coerce.number().positive().default(10),
+
+  /** Timeout de cada chamada HTTP a Supercell. */
+  SUPERCELL_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
 });
 
 export type Env = z.infer<typeof envSchema>;
