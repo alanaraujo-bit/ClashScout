@@ -42,7 +42,9 @@ git push -u origin main
 
 1. **New Project → Deploy from GitHub repo** e escolha o repositório.
 2. **Root Directory:** deixe na raiz (`/`). O `railway.json` cuida do resto:
-   - build: `npm ci && npm run build:api`
+   - build: `npm run build:api` (o Nixpacks já roda `npm ci` antes; repetir o
+     `npm ci` aqui falha com `EBUSY` por causa do cache mount em
+     `node_modules/.cache`)
    - start: `npm run start:api`
    - healthcheck: `/api/v1/health`
 3. **Add → Database → PostgreSQL** (usado a partir da Fase 2).
