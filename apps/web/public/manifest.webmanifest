@@ -1,0 +1,22 @@
+{
+  "name": "ClashScout - Recrutamento para Clash of Clans",
+  "short_name": "ClashScout",
+  "description": "Conecte jogadores de Clash of Clans aos clas certos. Curriculos, vagas e recrutamento em um so lugar.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
