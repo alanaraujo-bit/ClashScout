@@ -25,6 +25,18 @@ independentes.
 
 ---
 
+## Ambientes
+
+| Ambiente       | URL                                                                           |
+| -------------- | ----------------------------------------------------------------------------- |
+| PWA (produção) | https://clashscout-nine.vercel.app                                            |
+| API (produção) | https://api-production-de637.up.railway.app                                   |
+| Health check   | [`/api/v1/health`](https://api-production-de637.up.railway.app/api/v1/health) |
+
+Ambos deployam automaticamente a cada push na `main`.
+
+---
+
 ## Estrutura
 
 ```
