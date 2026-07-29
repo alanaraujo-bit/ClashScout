@@ -18,7 +18,7 @@ O `SessionGuard` aceita o token de sessão por:
    (dev) — fluxo normal do navegador;
 2. Header `Authorization: Bearer <sessionToken>` — clientes sem cookie e testes.
 
-Sem sessão válida: **401** (`Sessao ausente.` / `Sessao invalida ou expirada.`).
+Sem sessão válida: **401** com `code: "UNAUTHENTICATED"`.
 
 ### Endpoints do Auth.js (no app web, não na API)
 
@@ -86,6 +86,22 @@ externa — e nesse caso **não** grava snapshot, para não duplicar pontos.
 
 Série temporal, do mais recente para o mais antigo.
 `limit` entre 1 e 365, padrão 30. Retorna `PlayerStatsHistoryResponse`.
+
+---
+
+## Códigos genéricos
+
+Erros levantados pelo próprio framework (guards, `ValidationPipe`, rota
+inexistente) também recebem um `code` estável, para o frontend distinguir
+"faça login" de "corrija o formulário" sem ler a mensagem:
+
+| Situação                                     | `code`                  | HTTP |
+| -------------------------------------------- | ----------------------- | ---- |
+| Corpo/query inválidos ou campo não declarado | `VALIDATION_FAILED`     | 400  |
+| Sessão ausente, inválida ou expirada         | `UNAUTHENTICATED`       | 401  |
+| Sem permissão para o recurso                 | `FORBIDDEN`             | 403  |
+| Rota ou recurso inexistente                  | `NOT_FOUND`             | 404  |
+| Falha não tratada                            | `INTERNAL_SERVER_ERROR` | 500  |
 
 ---
 

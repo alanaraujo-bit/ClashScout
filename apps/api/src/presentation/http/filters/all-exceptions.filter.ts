@@ -125,9 +125,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? payload
           : ((payload as { message?: string | string[] }).message ?? exception.message);
 
+      const status = exception.getStatus();
+
       return {
-        statusCode: exception.getStatus(),
-        code: 'HTTP_EXCEPTION',
+        statusCode: status,
+        code: httpStatusToCode(status),
         message: Array.isArray(message) ? message.join('; ') : message,
         details: typeof payload === 'object' ? payload : undefined,
       };
@@ -138,5 +140,34 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Erro interno inesperado.',
     };
+  }
+}
+
+/**
+ * Codigo estavel para excecoes do proprio Nest (guards, ValidationPipe, rota
+ * inexistente), que nao passam por um erro de dominio nosso.
+ *
+ * Um `HTTP_EXCEPTION` generico nao serve ao proposito do campo `code`: o
+ * frontend precisa distinguir "faca login" de "corrija o formulario" sem ler o
+ * texto da mensagem.
+ */
+function httpStatusToCode(status: number): string {
+  switch (status) {
+    case HttpStatus.BAD_REQUEST:
+      return 'VALIDATION_FAILED';
+    case HttpStatus.UNAUTHORIZED:
+      return 'UNAUTHENTICATED';
+    case HttpStatus.FORBIDDEN:
+      return 'FORBIDDEN';
+    case HttpStatus.NOT_FOUND:
+      return 'NOT_FOUND';
+    case HttpStatus.CONFLICT:
+      return 'CONFLICT';
+    case HttpStatus.PAYLOAD_TOO_LARGE:
+      return 'PAYLOAD_TOO_LARGE';
+    case HttpStatus.TOO_MANY_REQUESTS:
+      return 'RATE_LIMITED';
+    default:
+      return status >= HttpStatus.INTERNAL_SERVER_ERROR ? 'INTERNAL_SERVER_ERROR' : 'HTTP_ERROR';
   }
 }
