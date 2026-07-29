@@ -123,7 +123,9 @@ obrigatório faltar, em vez de quebrar dentro de um caso de uso.
 
 Resumo — passo a passo em [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-- **Vercel** → Root Directory `apps/web`. Cada push na `main` publica o PWA.
+- **Vercel** → build a partir da raiz do repositório (`vercel.json` aponta o
+  `buildCommand` e o `outputDirectory` para `apps/web`). Cada push na `main`
+  publica o PWA.
 - **Railway** → repositório inteiro; `railway.json` define build, start e o
   healthcheck em `/api/v1/health`.
 
