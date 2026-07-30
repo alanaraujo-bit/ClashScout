@@ -4,6 +4,11 @@ import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 
 import { prisma } from '@/lib/prisma';
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  SESSION_MAX_AGE_SECONDS,
+} from '@/lib/session-cookie';
 
 /**
  * Configuracao do Auth.js (NextAuth v5).
@@ -27,10 +32,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],
   session: {
     strategy: 'database',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  },
+  // Nome e atributos fixos: o login por e-mail/senha (app-session.ts) cria a
+  // sessao direto no banco e precisa gravar o cookie com exatamente esta config.
+  cookies: {
+    sessionToken: {
+      name: SESSION_COOKIE_NAME,
+      options: SESSION_COOKIE_OPTIONS,
+    },
   },
   pages: {
-    // Telas proprias entram na Fase 4; por ora o Auth.js usa as dele.
     signIn: '/login',
   },
   callbacks: {

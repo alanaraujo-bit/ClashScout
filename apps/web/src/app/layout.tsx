@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { APP_DESCRIPTION, APP_NAME } from '@clashscout/shared';
 
+import { ServiceWorkerRegistration } from '@/components/system/service-worker-registration';
+
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -11,6 +13,14 @@ export const metadata: Metadata = {
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    // iOS ignora o manifest para o icone da tela inicial - so olha esta tag.
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     title: APP_NAME,
@@ -36,7 +46,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }

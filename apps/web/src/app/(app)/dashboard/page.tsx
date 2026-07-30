@@ -3,6 +3,7 @@ import { Castle, Hammer, Shield, ShieldCheck, Sparkles, Swords, Trophy } from 'l
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatTile } from '@/components/ui/stat-tile';
+import { NotificationOptIn } from '@/components/features/notification-opt-in';
 import { HERO_LABEL } from '@/lib/labels';
 import { getCurrentPlayerProfile } from '@/lib/current-profile';
 
@@ -29,6 +30,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
+      <NotificationOptIn
+        dismissKey="clashscout:notif-prompt-dashboard"
+        message="Ative notificacoes para saber na hora quando um lider responder sua candidatura."
+      />
+
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4">
           <div className="flex flex-col gap-2">

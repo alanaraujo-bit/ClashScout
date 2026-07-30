@@ -6,6 +6,7 @@ import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { FieldError, FieldHint } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
+import { NotificationOptIn } from '@/components/features/notification-opt-in';
 
 import { applyToVacancyAction, type ApplyState } from '../actions';
 
@@ -19,7 +20,12 @@ export function ApplyForm({ vacancyId, canApply }: { vacancyId: string; canApply
 
   if (state.success) {
     return (
-      <p className="text-sm text-green-600 dark:text-green-400">Candidatura enviada com sucesso.</p>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-green-600 dark:text-green-400">
+          Candidatura enviada com sucesso.
+        </p>
+        <NotificationOptIn message="Quer saber na hora quando o lider responder?" />
+      </div>
     );
   }
 

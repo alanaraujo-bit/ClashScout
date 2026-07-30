@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
+import { NotificationOptIn } from '@/components/features/notification-opt-in';
 
 import { applyToVacancyAction, type ApplyState } from './actions';
 
@@ -17,9 +18,12 @@ export function ApplyButton({ vacancyId, disabled }: { vacancyId: string; disabl
 
   if (state.success) {
     return (
-      <Button size="sm" variant="secondary" disabled>
-        Candidatura enviada
-      </Button>
+      <div className="flex flex-col items-end gap-2">
+        <Button size="sm" variant="secondary" disabled>
+          Candidatura enviada
+        </Button>
+        <NotificationOptIn message="Quer saber na hora quando o lider responder?" />
+      </div>
     );
   }
 

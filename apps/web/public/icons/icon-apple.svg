@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ClashScout">
+  <rect width="512" height="512" fill="#0071e3" />
+  <path
+    transform="translate(256 256) scale(0.82) translate(-256 -256)"
+    d="M256 116c-46 0-84 30-84 74v18h-10c-13 0-23 10-23 23v139c0 13 10 23 23 23h188c13 0 23-10 23-23V231c0-13-10-23-23-23h-10v-18c0-44-38-74-84-74zm0 44c22 0 40 13 40 30v18h-80v-18c0-17 18-30 40-30zm0 128c17 0 30 13 30 30 0 11-6 21-15 26v26c0 8-7 15-15 15s-15-7-15-15v-26c-9-5-15-15-15-26 0-17 13-30 30-30z"
+    fill="#ffffff"
+  />
+</svg>

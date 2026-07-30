@@ -16,6 +16,7 @@
     "@auth/prisma-adapter": "^2.11.3",
     "@clashscout/database": "^0.1.0",
     "@clashscout/shared": "^0.1.0",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.27.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
