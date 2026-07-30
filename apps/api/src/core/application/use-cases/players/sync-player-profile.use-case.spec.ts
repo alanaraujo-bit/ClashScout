@@ -66,6 +66,10 @@ class ProfileRepositoryFake extends PlayerProfileRepository {
     return Promise.resolve(this.profile);
   }
 
+  findById(): Promise<StoredPlayerProfile | null> {
+    return Promise.resolve(this.profile);
+  }
+
   findByPlayerTag(): Promise<StoredPlayerProfile | null> {
     return Promise.resolve(this.profile);
   }

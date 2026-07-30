@@ -11,6 +11,7 @@ import { VacancyNotOpenError } from '../../../domain/errors/application.errors';
 import type { ApplicationRepository } from '../../../domain/repositories/application.repository';
 import type { ClanVacancyRepository } from '../../../domain/repositories/clan-vacancy.repository';
 import type { PlayerProfileRepository } from '../../../domain/repositories/player-profile.repository';
+import type { WebPushPort } from '../../ports/web-push.port';
 
 export interface ApplyToVacancyInput {
   userId: string;
@@ -36,6 +37,7 @@ export class ApplyToVacancyUseCase {
     private readonly applications: ApplicationRepository,
     private readonly vacancies: ClanVacancyRepository,
     private readonly profiles: PlayerProfileRepository,
+    private readonly webPush: WebPushPort,
   ) {}
 
   async execute(input: ApplyToVacancyInput): Promise<StoredApplication> {
@@ -60,10 +62,21 @@ export class ApplyToVacancyUseCase {
       throw new DuplicateApplicationError();
     }
 
-    return this.applications.upsertPending({
+    const application = await this.applications.upsertPending({
       vacancyId: input.vacancyId,
       playerProfileId: profile.id,
       message: input.message ?? null,
     });
+
+    // Efeito colateral: nunca aguardado de forma bloqueante nem deixado
+    // derrubar a candidatura que acabou de ser criada com sucesso.
+    void this.webPush.sendToUser(vacancy.ownerId, {
+      title: 'Nova candidatura',
+      body: `${profile.name} se candidatou para "${vacancy.title}".`,
+      url: `/leader/vacancies/${vacancy.id}/applications`,
+      tag: `vacancy-${vacancy.id}-applications`,
+    });
+
+    return application;
   }
 }

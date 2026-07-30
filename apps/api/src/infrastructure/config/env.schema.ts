@@ -29,6 +29,15 @@ export const envSchema = z.object({
 
   /** Timeout de cada chamada HTTP a Supercell. */
   SUPERCELL_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
+
+  // --- Web Push (Fase 4) ---
+  // As tres juntas sao opcionais: sem elas o envio de push vira um no-op
+  // logado, em vez de derrubar o boot da aplicacao (mesma filosofia do
+  // SUPERCELL_API_TOKEN ausente).
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  /** Contato exigido pelo protocolo Web Push - `mailto:` ou URL https. */
+  VAPID_SUBJECT: z.string().default('mailto:contato@clashscout.app'),
 });
 
 export type Env = z.infer<typeof envSchema>;

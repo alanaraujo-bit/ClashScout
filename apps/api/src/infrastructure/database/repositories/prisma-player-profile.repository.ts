@@ -32,6 +32,12 @@ export class PrismaPlayerProfileRepository extends PlayerProfileRepository {
     return row === null ? null : toStoredProfile(row);
   }
 
+  async findById(profileId: string): Promise<StoredPlayerProfile | null> {
+    const row = await this.prisma.client.playerProfile.findUnique({ where: { id: profileId } });
+
+    return row === null ? null : toStoredProfile(row);
+  }
+
   async findByPlayerTag(tag: PlayerTag): Promise<StoredPlayerProfile | null> {
     const row = await this.prisma.client.playerProfile.findUnique({
       where: { playerTag: tag.value },

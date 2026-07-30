@@ -73,15 +73,20 @@ model User {
   /// Guardamos a URL publica; o upload entra na Fase 4.
   avatarUrl String?
 
+  /// Hash bcrypt da senha. Null para contas criadas via OAuth (Google), que
+  /// nao tem senha nossa - so a do provedor.
+  passwordHash String?
+
   role UserRole @default(PLAYER)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  playerProfile PlayerProfile?
-  vacancies     ClanVacancy[]
+  accounts          Account[]
+  sessions          Session[]
+  playerProfile     PlayerProfile?
+  vacancies         ClanVacancy[]
+  pushSubscriptions PushSubscription[]
 
   @@index([role])
 }
@@ -309,4 +314,31 @@ model Application {
   @@unique([vacancyId, playerProfileId])
   @@index([playerProfileId, status])
   @@index([vacancyId, status])
+}
+
+// ===========================================================================
+// Push - Fase 4
+// ===========================================================================
+
+/// Uma inscricao de Web Push (um navegador/dispositivo). Um usuario pode ter
+/// varias - cada aparelho instalado gera a sua.
+model PushSubscription {
+  id String @id @default(cuid())
+
+  userId String
+
+  /// URL unica do endpoint do provedor de push do navegador (identifica o dispositivo).
+  endpoint String @unique
+
+  /// Chaves de criptografia exigidas pelo protocolo Web Push (RFC 8291).
+  p256dh String
+  auth   String
+
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

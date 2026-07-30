@@ -55,4 +55,16 @@ export class AppConfigService {
   get supercellTimeoutMs(): number {
     return this.config.get('SUPERCELL_TIMEOUT_MS', { infer: true });
   }
+
+  get vapidPublicKey(): string | undefined {
+    return this.config.get('VAPID_PUBLIC_KEY', { infer: true });
+  }
+
+  get vapidPrivateKey(): string | undefined {
+    return this.config.get('VAPID_PRIVATE_KEY', { infer: true });
+  }
+
+  get vapidSubject(): string {
+    return this.config.get('VAPID_SUBJECT', { infer: true });
+  }
 }

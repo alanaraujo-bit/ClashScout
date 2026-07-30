@@ -26,6 +26,8 @@ export interface UpsertPlayerProfileInput {
 export abstract class PlayerProfileRepository {
   abstract findByUserId(userId: string): Promise<StoredPlayerProfile | null>;
 
+  abstract findById(profileId: string): Promise<StoredPlayerProfile | null>;
+
   abstract findByPlayerTag(tag: PlayerTag): Promise<StoredPlayerProfile | null>;
 
   /** Cria ou atualiza o perfil do usuario a partir de uma leitura da Supercell. */

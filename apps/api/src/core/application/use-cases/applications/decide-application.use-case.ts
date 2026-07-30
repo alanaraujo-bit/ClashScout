@@ -7,6 +7,8 @@ import {
 } from '../../../domain/errors/application.errors';
 import type { ApplicationRepository } from '../../../domain/repositories/application.repository';
 import type { ClanVacancyRepository } from '../../../domain/repositories/clan-vacancy.repository';
+import type { PlayerProfileRepository } from '../../../domain/repositories/player-profile.repository';
+import type { WebPushPort } from '../../ports/web-push.port';
 
 export interface DecideApplicationInput {
   ownerId: string;
@@ -19,6 +21,8 @@ export class DecideApplicationUseCase {
   constructor(
     private readonly applications: ApplicationRepository,
     private readonly vacancies: ClanVacancyRepository,
+    private readonly profiles: PlayerProfileRepository,
+    private readonly webPush: WebPushPort,
   ) {}
 
   async execute(input: DecideApplicationInput): Promise<StoredApplication> {
@@ -34,6 +38,26 @@ export class DecideApplicationUseCase {
       throw new ApplicationVacancyNotOwnedError();
     }
 
-    return this.applications.decide(input.applicationId, input.status, input.ownerId);
+    const decided = await this.applications.decide(
+      input.applicationId,
+      input.status,
+      input.ownerId,
+    );
+
+    const candidate = await this.profiles.findById(application.playerProfileId);
+    if (candidate !== null) {
+      const approved = input.status === ApplicationStatus.APPROVED;
+
+      // Efeito colateral: nunca aguardado de forma bloqueante nem deixado
+      // derrubar a decisao que acabou de ser gravada com sucesso.
+      void this.webPush.sendToUser(candidate.userId, {
+        title: approved ? 'Candidatura aprovada!' : 'Candidatura rejeitada',
+        body: `Sua candidatura para "${vacancy.title}" foi ${approved ? 'aprovada' : 'rejeitada'}.`,
+        url: '/applications',
+        tag: `application-${decided.id}`,
+      });
+    }
+
+    return decided;
   }
 }

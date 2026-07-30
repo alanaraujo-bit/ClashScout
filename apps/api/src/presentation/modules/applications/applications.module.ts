@@ -4,6 +4,7 @@ import { ApplyToVacancyUseCase } from '../../../core/application/use-cases/appli
 import { DecideApplicationUseCase } from '../../../core/application/use-cases/applications/decide-application.use-case';
 import { ListMyApplicationsUseCase } from '../../../core/application/use-cases/applications/list-my-applications.use-case';
 import { ListVacancyApplicationsUseCase } from '../../../core/application/use-cases/applications/list-vacancy-applications.use-case';
+import { WebPushPort } from '../../../core/application/ports/web-push.port';
 import { ApplicationRepository } from '../../../core/domain/repositories/application.repository';
 import { ClanVacancyRepository } from '../../../core/domain/repositories/clan-vacancy.repository';
 import { PlayerProfileRepository } from '../../../core/domain/repositories/player-profile.repository';
@@ -22,8 +23,9 @@ import { ApplicationsController } from './applications.controller';
         applications: ApplicationRepository,
         vacancies: ClanVacancyRepository,
         profiles: PlayerProfileRepository,
-      ) => new ApplyToVacancyUseCase(applications, vacancies, profiles),
-      inject: [ApplicationRepository, ClanVacancyRepository, PlayerProfileRepository],
+        webPush: WebPushPort,
+      ) => new ApplyToVacancyUseCase(applications, vacancies, profiles, webPush),
+      inject: [ApplicationRepository, ClanVacancyRepository, PlayerProfileRepository, WebPushPort],
     },
     {
       provide: ListMyApplicationsUseCase,
@@ -39,9 +41,13 @@ import { ApplicationsController } from './applications.controller';
     },
     {
       provide: DecideApplicationUseCase,
-      useFactory: (applications: ApplicationRepository, vacancies: ClanVacancyRepository) =>
-        new DecideApplicationUseCase(applications, vacancies),
-      inject: [ApplicationRepository, ClanVacancyRepository],
+      useFactory: (
+        applications: ApplicationRepository,
+        vacancies: ClanVacancyRepository,
+        profiles: PlayerProfileRepository,
+        webPush: WebPushPort,
+      ) => new DecideApplicationUseCase(applications, vacancies, profiles, webPush),
+      inject: [ApplicationRepository, ClanVacancyRepository, PlayerProfileRepository, WebPushPort],
     },
   ],
 })
