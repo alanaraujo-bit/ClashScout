@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -14,11 +15,13 @@ import { GetMyPlayerProfileUseCase } from '../../../core/application/use-cases/p
 import { GetPlayerStatsHistoryUseCase } from '../../../core/application/use-cases/players/get-player-stats-history.use-case';
 import { LinkPlayerAccountUseCase } from '../../../core/application/use-cases/players/link-player-account.use-case';
 import { SyncPlayerProfileUseCase } from '../../../core/application/use-cases/players/sync-player-profile.use-case';
+import { UpdatePlayStylesUseCase } from '../../../core/application/use-cases/players/update-play-styles.use-case';
 import type { AuthenticatedUser } from '../../../core/domain/repositories/session.repository';
 import { CurrentUser } from '../../http/decorators/current-user.decorator';
 import { SessionGuard } from '../../http/guards/session.guard';
 import { LinkPlayerAccountDto } from './dto/link-player-account.dto';
 import { StatsHistoryQueryDto } from './dto/stats-history-query.dto';
+import { UpdatePlayStylesDto } from './dto/update-play-styles.dto';
 import { toPlayerProfileResponse, toStatsHistoryResponse } from './player.presenter';
 
 /**
@@ -33,6 +36,7 @@ export class PlayersController {
     private readonly getMyProfile: GetMyPlayerProfileUseCase,
     private readonly syncProfile: SyncPlayerProfileUseCase,
     private readonly getHistory: GetPlayerStatsHistoryUseCase,
+    private readonly updatePlayStyles: UpdatePlayStylesUseCase,
   ) {}
 
   /** Vincula a conta do jogo ao usuario, comprovando posse pelo API Token. */
@@ -80,5 +84,16 @@ export class PlayersController {
     const { profile, snapshots } = await this.getHistory.execute(user.id, query.limit);
 
     return toStatsHistoryResponse(profile.playerTag, snapshots);
+  }
+
+  /** Estilos de jogo declarados pelo jogador, usados no matching de vagas. */
+  @Patch('me/play-styles')
+  async playStyles(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdatePlayStylesDto,
+  ): Promise<PlayerProfileResponse> {
+    const profile = await this.updatePlayStyles.execute(user.id, body.playStyles);
+
+    return toPlayerProfileResponse(profile, false);
   }
 }

@@ -1,9 +1,10 @@
 import {
+  ApplicationStatus as PrismaApplicationStatus,
   PlayStyle as PrismaPlayStyle,
   UserRole as PrismaUserRole,
   VacancyStatus as PrismaVacancyStatus,
 } from '@clashscout/database';
-import { PlayStyle, UserRole, VacancyStatus } from '@clashscout/shared';
+import { ApplicationStatus, PlayStyle, UserRole, VacancyStatus } from '@clashscout/shared';
 
 /**
  * O schema Prisma redeclara os enums de dominio porque o Prisma nao consegue
@@ -28,5 +29,9 @@ describe('enums do Prisma x @clashscout/shared', () => {
 
   it('VacancyStatus tem exatamente os mesmos valores', () => {
     expect(sortedValues(PrismaVacancyStatus)).toEqual(sortedValues(VacancyStatus));
+  });
+
+  it('ApplicationStatus tem exatamente os mesmos valores', () => {
+    expect(sortedValues(PrismaApplicationStatus)).toEqual(sortedValues(ApplicationStatus));
   });
 });

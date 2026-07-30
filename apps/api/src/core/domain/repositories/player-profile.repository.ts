@@ -38,4 +38,10 @@ export abstract class PlayerProfileRepository {
   abstract appendSnapshot(profileId: string, snapshot: StoredPlayerStatsSnapshot): Promise<void>;
 
   abstract listHistory(profileId: string, limit: number): Promise<StoredPlayerStatsSnapshot[]>;
+
+  /** Estilos de jogo declarados pelo proprio jogador - usados no matching de vagas. */
+  abstract updatePlayStyles(
+    profileId: string,
+    playStyles: PlayStyle[],
+  ): Promise<StoredPlayerProfile>;
 }

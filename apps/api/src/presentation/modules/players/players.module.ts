@@ -5,6 +5,7 @@ import { GetMyPlayerProfileUseCase } from '../../../core/application/use-cases/p
 import { GetPlayerStatsHistoryUseCase } from '../../../core/application/use-cases/players/get-player-stats-history.use-case';
 import { LinkPlayerAccountUseCase } from '../../../core/application/use-cases/players/link-player-account.use-case';
 import { SyncPlayerProfileUseCase } from '../../../core/application/use-cases/players/sync-player-profile.use-case';
+import { UpdatePlayStylesUseCase } from '../../../core/application/use-cases/players/update-play-styles.use-case';
 import { PlayerProfileRepository } from '../../../core/domain/repositories/player-profile.repository';
 import { PlayersController } from './players.controller';
 
@@ -38,6 +39,11 @@ import { PlayersController } from './players.controller';
     {
       provide: GetPlayerStatsHistoryUseCase,
       useFactory: (profiles: PlayerProfileRepository) => new GetPlayerStatsHistoryUseCase(profiles),
+      inject: [PlayerProfileRepository],
+    },
+    {
+      provide: UpdatePlayStylesUseCase,
+      useFactory: (profiles: PlayerProfileRepository) => new UpdatePlayStylesUseCase(profiles),
       inject: [PlayerProfileRepository],
     },
   ],

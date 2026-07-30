@@ -31,3 +31,12 @@ export class BusinessRuleError extends DomainError {
     super(message);
   }
 }
+
+/** Acao nao permitida para o usuario atual sobre o recurso (-> 403). */
+export class ForbiddenError extends DomainError {
+  readonly code = 'FORBIDDEN';
+
+  constructor(message = 'Acao nao permitida para este usuario.') {
+    super(message);
+  }
+}

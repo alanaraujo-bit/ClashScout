@@ -12,6 +12,7 @@ import type { Request, Response } from 'express';
 import {
   BusinessRuleError,
   DomainError,
+  ForbiddenError,
   NotFoundError,
 } from '../../../core/domain/errors/domain.error';
 import {
@@ -97,6 +98,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof SupercellNotConfiguredError) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: exception.code,
+        message: exception.message,
+      };
+    }
+
+    if (exception instanceof ForbiddenError) {
+      return {
+        statusCode: HttpStatus.FORBIDDEN,
         code: exception.code,
         message: exception.message,
       };

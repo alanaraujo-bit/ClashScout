@@ -89,6 +89,10 @@ class ProfileRepositoryFake extends PlayerProfileRepository {
   listHistory(): Promise<StoredPlayerStatsSnapshot[]> {
     return Promise.resolve([]);
   }
+
+  updatePlayStyles(): Promise<StoredPlayerProfile> {
+    return Promise.reject(new Error('nao usado neste teste'));
+  }
 }
 
 class SupercellGatewayFake extends SupercellGatewayPort {

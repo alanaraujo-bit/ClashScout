@@ -115,6 +115,15 @@ export class PrismaPlayerProfileRepository extends PlayerProfileRepository {
 
     return rows.map(toStoredSnapshot);
   }
+
+  async updatePlayStyles(profileId: string, playStyles: PlayStyle[]): Promise<StoredPlayerProfile> {
+    const row = await this.prisma.client.playerProfile.update({
+      where: { id: profileId },
+      data: { playStyles },
+    });
+
+    return toStoredProfile(row);
+  }
 }
 
 /** Campos vindos da Supercell, prontos para create e update. */
@@ -149,7 +158,7 @@ function toPersistenceFields(player: SupercellPlayer, syncedAt: Date) {
   };
 }
 
-function toStoredProfile(row: PlayerProfile): StoredPlayerProfile {
+export function toStoredProfile(row: PlayerProfile): StoredPlayerProfile {
   return {
     id: row.id,
     userId: row.userId,
